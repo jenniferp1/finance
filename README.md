@@ -11,7 +11,7 @@ This work herein was inspired by a number of resources and references:
 * [DataCamp](https://www.datacamp.com/community/tutorials)
 * [Loan Risk Analysis with XGBoost](https://databricks.com/blog/2018/08/09/loan-risk-analysis-with-xgboost-and-databricks-runtime-for-machine-learning.html) by Amy Wang and Denny Lee
 * [Lending Analysis and Default Rate Prediction](https://canvas.harvard.edu/courses/12656/files/2822174/download?verifier=cwyLD199GhxwqW1TKTESsPVfaaNJWX0lqZBDfSns&wrap=1) by Qing Zhao
-* [Financial Machine Learning](https://github.com/firmai/financial-machine-learning/blob/master/README.md by Derek Snow
+* [Financial Machine Learning](https://github.com/firmai/financial-machine-learning/blob/master/README.md) by Derek Snow
 * [Economic Modeling and Data Science](https://datascience.quantecon.org/)
 * [Quantitative Economics](https://github.com/QuantEcon/)
 * [Financial Analytics with R](https://www.academia.edu/32351133/Financial_Analytics_with_R_Building_a_Laptop_Laboratory_for_Data_Science) by H Smith
