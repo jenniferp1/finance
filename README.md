@@ -3,7 +3,7 @@ Code related to financial modeling exercises.
 
 The examples in this repository are written in both <b>`Python`</b> (Jupyer notebooks) and <b>`R`</b> (R Studio).
 
-This work herein was inspired by a number of resources and references:
+This work herein was informed by a number of resources and references:
 * [Loan Default and Profitability Prediction](http://cs229.stanford.edu/proj2018/report/69.pdf) by Peiqian Li and Gao Han
 * [The Future of Lending Money Is Deep Learning](https://towardsdatascience.com/the-future-of-lending-money-is-deep-learning-61a9e21cf179) by Simeon Kostadinov
 * [Loan Repayment Prediction Using Machine Learning](https://escholarship.org/uc/item/9cc4t85b) by Chang Han
