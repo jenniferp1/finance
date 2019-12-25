@@ -15,7 +15,7 @@ This work herein was inspired by a number of resources and references:
 * [Economic Modeling and Data Science](https://datascience.quantecon.org/)
 * [Quantitative Economics](https://github.com/QuantEcon/)
 * [Financial Analytics with R](https://www.academia.edu/32351133/Financial_Analytics_with_R_Building_a_Laptop_Laboratory_for_Data_Science) by H Smith
-* []()
+* [Predicting Loan Grades with Neural Networks](https://medium.com/universal-mind/predicting-loan-grades-with-a-neural-network-a-machine-learning-pipeline-on-aws-65d5e1d2f08e) by James Andersen
 * []()
 * []()
 * []()
