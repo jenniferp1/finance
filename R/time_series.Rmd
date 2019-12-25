@@ -1,0 +1,180 @@
+---
+title: "Exploring & Visualizing Time Series"
+output: html_notebook
+---
+
+# Introduction
+
+Forecasting is a fundamental analytic process in every organization (e.g., forecasting sales, production, demand, prices, inflation and economic activity). The purpose of this tutorial is to get you started doing some fundamental time series exploration and visualization.
+
+In this notebook we do some fundamental time series exploration and visualization.
+
+**Hint**: To excute code chunks, click the *Run* button within the chunk or place your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+# Contents
+1. [Getting Started](#Getting-Started)
+2. [Time Series Objects](#Time-Series-Objects)
+3. [Time Series Plots](#Time-Series-Plots)
+4. [Seasonal Plots](#Seasonal-Plots)
+5. [Autocorrelation](#Autocorrelation)
+6. [White Noise](#White-Noise)
+
+
+# Getting Started {#Getting-Started}
+
+We will use a variety of datasets in the notebook. The datasets are all provided by the forecast and fpp2 packages. These two packages also provide various functions for computing and visualizing basic time series components, as we will see.
+
+If you do not already have the packages installed, in the console type
+```
+> install.packages("forecast")
+> install.packages("fpp2")
+```
+
+In Linux you may get an installation error (ERROR: dependency).  If so, open a terminal and run the following command
+```
+$ sudo apt-get install libcurl4-openssl-dev
+```
+
+```{r}
+library(forecast)
+library(fpp2)
+```
+
+# Time Series Objects {#Time-Series-Objects}
+
+A time series can be thought of as a vector or matrix of numbers, along with some information about what times those numbers were recorded. This information is stored in a `ts` object in R. 
+
+If you want to work with your own data, you need to know how to create a `ts` object in R.
+
+Here, I illustrate how to convert a data frame to a `ts` object. First, if we have a data frame named `pass.df` 
+
+```{r}
+# Import the data and look at the first six rows
+pass.df <- read.csv(file = 'data/Passengers.csv')
+head(pass.df)
+```
+```{r}
+tail(pass.df)
+```
+
+Above we have the total number of airline passengers for each month for the years 2003-2019.
+
+We can convert this data frame to a time series object by us the `ts()` function. Here, the…
+
+- first argumet supplies it the `pass.df` data frame and we index for just the columns with the data (we store the date-time data separately).
+- second argument supplies the start date for the first observation (first period in 2003).
+- third argument identifies the frequency, which in this case is monthly (hence 12 months in a year).
+
+```{r}
+pass.ts <- ts(pass.df["AirPassengers"], start = c(2003, 1), frequency = 12)
+```
+
+We now have converted our data frame into a time series object:
+
+```{r}
+str(pass.ts)
+```
+```{r}
+pass.ts
+```
+
+R also has a built-in `AirPassengers` [dataset](https://rpubs.com/emb90/137525).  It has the total number of airline passengers for each month for the years 1949-1960.  We can compare our homemade `pass.ts` to it:
+```{r}
+data("AirPassengers")
+AP <- AirPassengers
+AP
+```
+
+
+# Time Series Plots {#Time-Series-Plots}
+
+The first step in any data analysis task is to plot the data. Graphs enable you to visualize many features of the data, including patterns, unusual observations, changes over time, and relationships between variables. Just as the type of data determines which forecasting method to use, it also determines which graphs are appropriate.
+
+Here, we use the `autoplot()` function to produce time plots of `ts` data. In time series plots, we should always look for outliers, seasonal patterns, overall trends, and other interesting features. This plot starts to illustrate the obvious trends that emerge over time.
+
+We will use the built-in `AirPassengers` dataset for the next parts.
+
+```{r}
+autoplot(AP)
+```
+
+Often, we’ll have time series data that has multiple variables. For example, the built-in `fpp2::arrivals` data set has time series data for “quarterly international arrivals (in thousands) to Australia from Japan, New Zealand, UK and the US. 1981Q1 - 2012Q3.” So this time series data has two variables (over and above the time stamp data) - (1) arrivals in thousands and (2) country.
+
+```{r}
+head(arrivals)
+```
+
+We can compare the trends across the different variables (countries) either in one plot or use the facetting option to separate the plots:
+
+```{r}
+# left
+autoplot(arrivals)
+
+# right
+autoplot(arrivals, facets = TRUE)
+```
+
+Many of the visualizations in the forecast package are built on top of ggplot2. This allows us to easily add on to these plots with ggplot2 syntax. For example, we can add a smooth trend line and adjust titles:
+
+```{r}
+autoplot(arrivals, facets = TRUE) +
+  geom_smooth() +
+  labs("International arrivals to Australia",
+       y = "Arrivals (in thousands)",
+       x = NULL)
+```
+
+We can index and use many normal functions to assess additional questions such as what was the min, max, or average arrival amount for Japan.
+
+```{r}
+# index for Japan
+japan <- arrivals[, "Japan"]
+
+# Identify max arrival amount
+summary(japan)
+
+```
+
+You can also use the `frequency()` function to get the number of observations per unit time. 
+
+```{r}
+frequency(japan)
+```
+
+In viewing time series plots we can describe different components. We can describe the common components using this quarterly cement production data.
+
+```{r}
+autoplot(fpp2::qcement)
+```
+
+How to interpret:
+
+- the **trend** is the long-term increase or decrease in the data. There is an increasing trend in the cement data.
+- the **seasonal** pattern occurs when a time series is affected by seasonal factors such as the time of the year or the day of the week. The quarterly cement data above shows seasonality likely induced by the change in weather and its impact on being able to pour cement.
+- the **cycle** occurs when the data exhibit rises and falls that are not of a fixed period. These fluctuations are usually due to economic conditions and are often related to the “business cycle”. We can see a few cycles in our cement data in the early ’80s, ’90s, ’00s, and around 2008 - all these date ranges are around economic depressions that occurred.
+
+# Seasonal Plots {#Seasonal-Plots}
+
+```{r}
+
+```
+
+# Autocorrelation {#Autocorrelation}
+
+```{r}
+
+```
+
+# White Noise {#White-Noise}
+
+```{r}
+
+```
+
+
+### Notes on using R Notebook:
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
