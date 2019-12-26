@@ -1,6 +1,8 @@
 ---
 title: "Exploring & Visualizing Time Series"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Introduction
@@ -141,7 +143,7 @@ You can also use the `frequency()` function to get the number of observations pe
 frequency(japan)
 ```
 
-In viewing time series plots we can describe different components. We can describe the common components using this quarterly cement production data.
+In viewing time series plots we can describe different components. We can describe the common components using this quarterly cement production data, `qcement`.
 
 ```{r}
 autoplot(fpp2::qcement)
@@ -153,23 +155,210 @@ How to interpret:
 - the **seasonal** pattern occurs when a time series is affected by seasonal factors such as the time of the year or the day of the week. The quarterly cement data above shows seasonality likely induced by the change in weather and its impact on being able to pour cement.
 - the **cycle** occurs when the data exhibit rises and falls that are not of a fixed period. These fluctuations are usually due to economic conditions and are often related to the “business cycle”. We can see a few cycles in our cement data in the early ’80s, ’90s, ’00s, and around 2008 - all these date ranges are around economic depressions that occurred.
 
-# Seasonal Plots {#Seasonal-Plots}
+Let's return to the `AirPassenger` data set in `forecast`.
+Decomposing the data into its trend, seasonal, and random error components will give some idea how these components relate to the observed dataset.
 
 ```{r}
-
+AP.decompM <- decompose(AP, type = "multiplicative")
+plot(AP.decompM)
 ```
+
+Inspecting the trend component in the decomposition plot suggests that the relationship is linear, thus fitting a linear model:
+
+```{r}
+t <- seq(1, 144, 1)
+modelTrend <- lm(formula = AP.decompM$trend ~ t)
+predT <- predict.lm(modelTrend, newdata = data.frame(t))
+
+plot(AP.decompM$trend[7:138] ~ t[7:138], ylab="T(t)", xlab="t",
+     type="p", pch=20, main = "Trend Component: Modelled vs Observed")
+lines(predT, col="red")
+```
+
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(modelTrend)
+```
+
+```{r}
+summary(modelTrend)
+```
+
+Therefore, the relationship between trend and time can be expressed as:
+$T(t)=2.667t+84.648$
+
+And so for 1961 (time 145 to 156 inc.), the trend component (T) is:
+
+```{r}
+Data1961 <- data.frame("T" = 2.667*seq(145, 156, 1) + 84.648, S=rep(0,12), e=rep(0,12),
+                       row.names = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+Data1961
+```
+
+Inspecting the seasonal (S) component of the decomposition reveals:
+
+```{r}
+AP.decompM$seasonal
+```
+
+Thus the seasonal (S) component to the new 1961 dataset is:
+
+```{r}
+Data1961$S <- unique(AP.decompM$seasonal)
+Data1961
+```
+
+
+# Seasonal Plots {#Seasonal-Plots}
+
+There are a few useful ways of plotting data to emphasize seasonal patterns and show changes in these patterns over time. First, a seasonal plot is similar to a time plot except that the data are plotted against the individual “seasons” in which the data were observed. 
+
+Looking at the quarterly cement production data, `qcement`, we can produce a seasonal plot with `ggseasonplot()`:
+
+```{r}
+ggseasonplot(qcement, year.labels=FALSE, continuous=TRUE)
+```
+
+A seasonal plot allows the underlying seasonal pattern to be seen more clearly, and can be useful in identifying years in which the pattern changes. Here, we see that cement production has consistently increased over the years as the lower (darker) lines represent earlier years and the higher (lighter) lines represent recent years. Also, we see that cement production tends to be the lowest in Q1 and typically peaks in Q3 before leveling off or decreasing slightly in Q4.
+
+A particular useful variant of a season plot uses polar coordinates, where the time axis is circular rather than horizontal. Here, we plot the a10 data with the conventional seasonal plot versus a polar coordinate option to illustrate this variant. Both plots illustrate a sharp decrease in values in Feb and then a slow increase from Apr-Jan.
+
+```{r}
+# left
+ggseasonplot(a10, year.labels=FALSE, continuous=TRUE)
+
+#right
+ggseasonplot(a10, year.labels=FALSE, continuous=TRUE, polar = TRUE)
+```
+
+An alternative plot that emphasizes the seasonal patterns is where the data for each season (quarter in our example) are collected together in separate mini time plots. A subseries plot produced by `ggsubseriesplot()` creates mini time plots for each season. Here, the mean for each season is shown as a blue horizontal line.
+
+```{r}
+ggsubseriesplot(qcement)
+```
+
+This form of plot enables the underlying seasonal pattern to be seen clearly, and also shows the changes in seasonality over time. It is especially useful in identifying changes within particular seasons.
 
 # Autocorrelation {#Autocorrelation}
 
-```{r}
+Another way to look at time series data is to plot each observation against another observation that occurred some time previously. For example, you could plot 
+$y_t$ against $y_{t−1}$
+. This is called a lag plot because you are plotting the time series against lags of itself. The `gglagplot()` function produces various types of lag plots.
 
+The correlations associated with the lag plots form what is called the “autocorrelation function”.
+
+Autocorrelation is the correlation of a time series with a delayed copy of itself.
+
+Now we look at the **total quarterly beer production in Australia** (in megalitres) from 1956:Q1 to 2010:Q2. The data are available in the `fpp2::ausbeer` time series data.
+
+
+```{r}
+# autoplot of the beer data
+autoplot(ausbeer)
+
+```
+```{r}
+#lag plot of the beer data
+gglagplot(ausbeer)
+
+
+```
+```{r}
+#ACF plot of the beer data
+ggAcf(ausbeer)
+```
+
+The middle plot provides the bivariate scatter plot for each level of lag (1-9 lags). The bottom plot provides a condensed plot of the autocorrelation values for the first 23 lags. This shows that the greatest autocorrelation values occur at lags 4, 8, 12, 16, and 20. We can adjust the `gglagplot` to help illustrate this relationship. 
+
+Here, we create a scatter plot for the first 16 lags. 
+
+```{r}
+gglagplot(ausbeer,16)
+```
+
+If you look at the right-most column (lags 4, 8, 12, 16) you can see that the relationship appears strongest for these lags, thus supporting our far right plot above.
+
+We can see that the autocorrelation for the two strongest lags (4 and 8) is 0.94 and 0.887:
+
+```{r}
+acf(ausbeer, plot = FALSE)
+```
+
+### A simplified approach to thinking about time series features and autocorrelation
+
+**Trends** induce positive correlations in the early lags. 
+
+```{r}
+autoplot(AirPassengers)
+```
+
+
+```{r}
+ggAcf(AirPassengers)
+```
+
+**Seasonality** will induce peaks at the seasonal lags. Think about the holidays, each holiday will have certain products that peak at that time each year and so the strongest correlation will be the values at that same time each year.
+
+```{r}
+autoplot(USAccDeaths)
+```
+
+
+```{r}
+ggAcf(USAccDeaths)
+```
+
+**Cyclicity** induces peaks at the average cycle length. Here we see that there tends to be cyclic impact to the mink population every 10 years. 
+
+```{r}
+autoplot(mink)
+```
+
+
+```{r}
+ggAcf(mink)
 ```
 
 # White Noise {#White-Noise}
 
-```{r}
+Time series that show no autocorrelation are called “white noise”. For example, the following plots 36 random numbers and illustrates a white noise series. This data is considered idependent and identically distributed (“iid”) because there is no trend, no seasonality, no autocorrelation…just randomness.
 
+```{r}
+set.seed(3)
+wn <- ts(rnorm(36))
+autoplot(wn)
 ```
+
+For white noise series, we expect each autocorrelation to be close to zero.
+
+```{r}
+ggAcf(wn)
+```
+
+Assessing autocorrelation can be quite useful for data sets where trends and seasonalities are hard to see. For example, the following displays the monthly number of pigs slaughtered in Victoria, Australia from 1990-1995. There may be a slight trend over time but it is unclear.
+
+```{r}
+pigs.ts <- ts(pigs[121:188], start = c(1990, 1), frequency = 12)
+
+autoplot(pigs.ts)
+```
+
+However, looking at the ACF plot makes the feature more clear. There is more information in this data then the plain time series plot provided. We see that the first three lags clearly exceed the blue line suggesting there is possibly some signal in this time series component that can be used in a forecasting approach.
+
+```{r}
+ggAcf(pigs.ts)
+```
+
+The ACF plots test if an individual lag autocorrelation is different than zero. An alternative approach is to use the Ljung-Box test, which tests whether any of a group of autocorrelations of a time series are different from zero. In essence it tests the “overall randomness” based on a number of lags. If the result is a small p-value than it indicates the data are probably not white noise.
+
+Here, we perform a Ljung-Box test on the first 24 lag autocorrelations:
+
+```{r}
+Box.test(pigs, lag = 24, fitdf = 0, type = "Lj")
+```
+
+The resulting p-value is significant at $p < 2.2e^{-16}$
+ so this supports our above statement that it’s likely this is not purely white noise and that some time series information exists in this data.
 
 
 ### Notes on using R Notebook:
