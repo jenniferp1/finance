@@ -6,9 +6,9 @@ The examples in this repository are written in both <b>`Python`</b> (Jupyer note
 This work herein was informed by a number of resources and references:
 
 1. [General](#General)
-2. [Loan Prediction](#Loan-Prediction)
-3. [Machine Learning and Deep Learning in Finance](#Machine-Learning-and-Deep-Learning-in-Finance)
-4. [Financial Analysis & Economics](#Financial-Analysis-&-Economics)
+2. [Loan Prediction](#loan-prediction)
+3. [Machine Learning and Deep Learning in Finance](#machine-learning-and-deep-learning-in-finance)
+4. [Financial Analysis & Economics](#financial-analysis--economics)
 
 ## General
 * [DataCamp](https://www.datacamp.com/community/tutorials)
