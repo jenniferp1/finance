@@ -1,0 +1,894 @@
+---
+title: "Predicting Loan Risk"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+## <font color="red">Important -- Read This First!"</font>
+
+If you cloned this notebook from GitHub, you will need to either <br>
+1. Download the *loan.csv* file from Kaggle (link given under [Datasets](#Datasets)) or  
+2. Unzip the *LCloan.csv.bz3* from the [data](./data) folder.
+
+If you download from Kaggle, you will need to rename *loan.csv* to *LCloan.csv* and save it in the [data folder](./data).
+
+# Introduction 
+
+### Loan Risk Prediction using Lending Club Data
+
+**Keywords**: logistic regression, supervised machine learning, classification, loan risk modeling
+
+In this notebook we look at the application of *Logistic Regression* to predictions whether a loan will be fully repaid or not, and how we can use prediction models when deciding about investments. The prediction model is built using historical data from [Lending Club](https://www.kaggle.com/wendykan/lending-club-loan-data) for period from 2007 until 2015. 
+
+Logistic regression has the same idea as linear regression. The difference is that with logistic regression we try to predict qualitative response (output is categorical variable).
+
+#### Goal
+
+To build a loan risk model using supervised machine learning method (classification) that will help to predict if a borrower will repay the loan based on historical data provided by Lending Club.
+
+#### About Lending Club
+
+The [Lending Club](https://www.lendingclub.com/) is an online marketplace for personal loans that matches borrowers who are seeking a loan with investors looking to lend money and make a return. Each borrower fills out a comprehensive application, providing their past financial history, the reason for the loan, and more. Lending Club evaluates each borrower’s credit score using past historical data and assigns an interest rate to the borrower. 
+
+The benefit to us is that some of these data have been made available to us for analysis. While loan data excludes personally identifiable information, it does include attributes like FICO score, location, annual income, lines of credit, and descriptions of why the applicant needs the loan.
+
+# Datasets{#Datasets}
+
+There are several sources of Lending Club data that you might be able to use to test the code:
+
+* [Kaggle option 1](https://www.kaggle.com/wendykan/lending-club-loan-data)
+
+* [Kaggle option 2](https://www.kaggle.com/wordsforthewise/lending-club)
+
+* [Data World](https://data.world/jaypeedevlin/lending-club-loan-data-2007-11) (data from 2007)
+
+* [Lending Club](https://www.lendingclub.com/auth/login?login_url=%2Finfo%2Fdownload-data.action)
+
+Here we use the first Kaggle dataset (option 1).
+
+These data contain complete loan data for all loans issued through the 2007-2015, including the current loan status (Current, Late, Fully Paid, etc.) and latest payment information. The file containing loan data through the "present" contains complete loan data for all loans issued through the previous completed calendar quarter. Additional features include credit scores, number of finance inquiries, address including zip codes, and state, and collections among others. A [data dictionary](./data/LCDataDictionary.xlsx) is provided in a separate file.
+
+# Sections
+1. [Loading the Data and Getting Familiar](#Loading-Data)
+2. [Data Cleaning](#Data-Cleaning)
+3. [Exploratory Data Analysis](#EDA)
+4. [Build the Model](#Build-Model)
+
+
+
+\newline<br />
+\newline<br />
+
+
+**Hint**: To excute code chunks, click the *Run* button within the chunk or place your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+\newline<br />
+\newline<br />
+
+First we will install all packages that we are going to use in this project.
+
+```{r}
+library(gmodels)
+library(lubridate)
+library(plyr)
+library(ggplot2)
+library(caTools)
+library(e1071)
+library(ROCR)
+library(caret)
+library(ROSE)
+library(data.table)
+library(dplyr)
+```
+
+```{r}
+raw.data <- fread("./data/LCloan.csv")
+head(raw.data)
+```
+
+# Loading the Data and Getting Familiar:{#Loading-Data} 
+Explore the raw data
+
+References
+
+* [Working with data frames](https://monashbioinformaticsplatform.github.io/r-intro/data_frames.html) 
+
+* [Data frame column names](https://bookdown.org/ndphillips/YaRrr/dataframe-column-names.html)
+
+* [Determine data types of a data frame](https://stackoverflow.com/questions/21125222/determine-the-data-types-of-a-data-frames-columns/21125793)
+```{r}
+dim(raw.data) 
+```
+```{r}
+class(raw.data) 
+
+```
+```{r}
+names(raw.data) #Column names are not copied.
+
+```
+```{r}
+head(raw.data, n=20)
+tail(raw.data, n=20)
+```
+```{r}
+str(raw.data) 
+```
+```{r}
+sapply(raw.data, class)
+```
+```{r}
+sapply(raw.data, typeof)
+```
+
+For references on filtering data frames based on conditions see:
+
+* [How to select_if in dplyr, where the logical condition is negated](https://stackoverflow.com/questions/51358388/how-to-select-if-in-dplyr-where-the-logical-condition-is-negated)
+
+* [Selecting columns and renaming are so easy with dplyr](https://blog.exploratory.io/selecting-columns-809bdd1ef615)
+
+* [Select data frame columns in R](https://www.datanovia.com/en/lessons/select-data-frame-columns-in-r/)
+
+* [Five ways to subset a data frame in R](https://www.r-bloggers.com/5-ways-to-subset-a-data-frame-in-r/)
+
+```{r}
+ncol(raw.data)
+```
+
+```{r}
+# Drop columns that are NOT type logical
+raw.data <- raw.data %>% select_if(Negate(is.logical))
+ncol(raw.data)
+```
+
+*Note* that `%>%`is defined by the package `magrittr (CRAN)` and is heavily used by `dplyr (CRAN)`.
+It works like a pipe, hence what the function does is to pass the left hand side of the operator to the first argument of the right hand side of the operator. 
+
+Reference:
+
+* [Meaning of %>%](https://stackoverflow.com/questions/24536154/what-does-mean-in-r)
+
+```{r}
+#Select relevant features for model
+features <- c("loan_status", "grade", "sub_grade", "open_acc","pub_rec", "dti", "delinq_2yrs",
+              "inq_last_6mths", "emp_length", "annual_inc", "home_ownership",  "purpose", "addr_state",
+              "loan_amnt","int_rate", "installment", "issue_d", "revol_bal", "revol_util")
+
+raw.data <- raw.data %>% select(features)
+ncol(raw.data)
+
+```
+
+
+```{r}
+# Delete empty rows if they exist
+
+raw.data <- raw.data[!apply(raw.data == "", 1, all),]
+```
+
+Reference:
+
+* [Plotting categorical data](http://pages.stat.wisc.edu/~larget/stat302/chap2.pdf)
+
+* [ggplot quick start guide](http://www.sthda.com/english/wiki/ggplot2-histogram-plot-quick-start-guide-r-software-and-data-visualization#change-histogram-plot-line-types-and-colors)
+
+```{r}
+# View emp_length
+# Will keep missing values. Categorical variable. Will make six bins <1, 1-3, 3-6, 6-9, 10+, missing
+raw.data$emp_cat <- rep(NA, length(raw.data$emp_length))
+raw.data$emp_cat[which(raw.data$emp_length == "< 1 year")] <- "0-1"
+raw.data$emp_cat[which(raw.data$emp_length == "1 year" | raw.data$emp_length=="2 years" | raw.data$emp_length=="3 years")] <- "1-3"
+raw.data$emp_cat[which(raw.data$emp_length == "4 years" | raw.data$emp_length=="5 years" | raw.data$emp_length=="6 years")] <- "4-6"
+raw.data$emp_cat[which(raw.data$emp_length == "7 years" | raw.data$emp_length=="8 years" | raw.data$emp_length=="9 years")] <- "7-9"
+raw.data$emp_cat[which(raw.data$emp_length == "10+ years")] <- "10+"
+raw.data$emp_cat[which(raw.data$emp_length == "n/a")] <- "missing"
+raw.data$emp_cat <- as.factor(raw.data$emp_cat)
+ggplot(raw.data, aes(x = emp_cat)) + geom_bar(color="red",fill="red")
+
+```
+Histogram of factorial variable emp_cat after using coarse classification to handle missing values
+
+```{r}
+str(raw.data)
+```
+
+
+# (Data Cleaning) Preparing Data for Analysis{#Data-Cleaning}
+
+* [Factors](https://www.statmethods.net/input/datatypes.html)
+
+```{r}
+#int_rate variable
+raw.data$int_rate <- as.numeric(sub("%","",raw.data$int_rate)) #Remove % sign and convert to numeric
+class(raw.data$int_rate) # verify numeric
+raw.data$int_rate <- raw.data$int_rate / 100
+is.numeric(raw.data$int_rate) # TRUE
+anyNA(raw.data$int_rate) # FALSE (No missing values)
+
+```
+
+```{r}
+#revol_util variable
+raw.data$revol_util <- as.numeric(sub("%","",raw.data$revol_util)) #Remove % sign; convert to numeric
+class(raw.data$revol_util) # verify is numeric
+raw.data$revol_util <- raw.data$revol_util / 100
+is.numeric(raw.data$revol_util) # TRUE
+anyNA(raw.data$revol_util) # TRUE (There are missing values)
+
+```
+
+```{r}
+index.NA <- which(is.na(raw.data$revol_util)) 
+median(raw.data$revol_util, na.rm = TRUE) #median value
+raw.data$revol_util[index.NA] <- median(raw.data$revol_util, na.rm = TRUE) #Replace missing by median 0.503
+anyNA(raw.data$revol_util) # FALSE (No missing values)
+```
+
+
+```{r}
+#revol_bal variable
+class(raw.data$revol_bal) #should be numeric
+raw.data$revol_bal <- as.character(raw.data$revol_bal) #Converting into character
+raw.data$revol_bal <- as.numeric(raw.data$revol_bal) # Converting into numeric
+anyNA(raw.data$revol_bal) #No missing values
+
+```
+```{r}
+#installment variable
+class(raw.data$installment) #It is factor, should be numeric
+raw.data$installment <- as.character(raw.data$installment) #Converting into character
+raw.data$installment <- as.numeric(raw.data$installment) #Converting into numeric
+is.numeric(raw.data$installment) # TRUE
+anyNA(raw.data$installment) #No missing values
+```
+
+```{r}
+#loan_amnt
+class(raw.data$loan_amnt) #It is factor, should be numeric
+raw.data$loan_amnt <- as.character(raw.data$loan_amnt) #Converting into character
+raw.data$loan_amnt <- as.numeric(raw.data$loan_amnt) #Converting into numeric
+is.numeric(raw.data$loan_amnt) # TRUE
+anyNA(raw.data$loan_amnt) #No missing values
+
+```
+
+```{r}
+#annual_inc
+class(raw.data$annual_inc) #It is factor, should be numeric
+raw.data$annual_inc <- as.character(raw.data$annual_inc) #Converting into character
+raw.data$annual_inc <- as.numeric(raw.data$annual_inc) #Converting into numeric
+is.numeric(raw.data$annual_inc) # TRUE
+anyNA(raw.data$annual_inc) #4 missing values
+index.NA <- which(is.na(raw.data$annual_inc))
+raw.data$annual_inc[index.NA] <- median(raw.data$annual_inc, na.rm = TRUE)
+anyNA(raw.data$annual_inc) #No missing values
+
+```
+
+```{r}
+
+#dti
+class(raw.data$dti) #It is factor, should be numeric
+raw.data$dti <- as.character(raw.data$dti) #Converting into character
+raw.data$dti <- as.numeric(raw.data$dti) #Converting into numeric
+is.numeric(raw.data$dti) # TRUE
+anyNA(raw.data$dti) #There are missing values
+
+```
+
+```{r}
+index.NA <- which(is.na(raw.data$dti)) 
+median(raw.data$dti, na.rm = TRUE) #median value
+raw.data$dti[index.NA] <- median(raw.data$dti, na.rm = TRUE) #Replace missing by median 17.84
+anyNA(raw.data$dti) # FALSE (No missing values)
+```
+
+
+```{r}
+
+#open_acc
+class(raw.data$open_acc) #It is factor, should be numeric
+raw.data$open_acc <- as.character(raw.data$open_acc) #Converting into character
+raw.data$open_acc <- as.numeric(raw.data$open_acc) #Converting into numeric
+is.numeric(raw.data$open_acc) # TRUE
+anyNA(raw.data$open_acc) #missing values
+
+```
+```{r}
+index.NA <- which(is.na(raw.data$open_acc)) 
+median(raw.data$open_acc, na.rm = TRUE) #median value
+raw.data$open_acc[index.NA] <- median(raw.data$open_acc, na.rm = TRUE) #Replace missing by median 11
+anyNA(raw.data$open_acc) # FALSE (No missing values)
+```
+
+```{r}
+#pub_rec
+class(raw.data$pub_rec) #It is factor, should be numeric
+raw.data$pub_rec <- as.character(raw.data$pub_rec) #Converting into character
+raw.data$pub_rec <- as.numeric(raw.data$pub_rec) #Converting into numeric
+is.numeric(raw.data$pub_rec) # TRUE
+anyNA(raw.data$pub_rec) #missing values
+
+```
+
+```{r}
+index.NA <- which(is.na(raw.data$pub_rec)) 
+median(raw.data$pub_rec, na.rm = TRUE) #median value
+raw.data$pub_rec[index.NA] <- median(raw.data$pub_rec, na.rm = TRUE) #Replace missing by median 0
+anyNA(raw.data$pub_rec) # FALSE (No missing values)
+```
+
+```{r}
+#delinq_2yrs
+class(raw.data$delinq_2yrs) #It is factor, should be numeric
+raw.data$delinq_2yrs <- as.character(raw.data$delinq_2yrs) #Converting into character
+raw.data$delinq_2yrs <- as.numeric(raw.data$delinq_2yrs) #Converting into numeric
+is.numeric(raw.data$delinq_2yrs) # TRUE
+anyNA(raw.data$delinq_2yrs) #missing values
+
+```
+
+```{r}
+index.NA <- which(is.na(raw.data$delinq_2yrs)) 
+median(raw.data$delinq_2yrs, na.rm = TRUE) #median value
+raw.data$delinq_2yrs[index.NA] <- median(raw.data$delinq_2yrs, na.rm = TRUE) #Replace missing by median 0
+anyNA(raw.data$delinq_2yrs) # FALSE (No missing values)
+```
+
+```{r}
+#inq_last_6mths
+class(raw.data$inq_last_6mths) #It is factor, should be numeric
+raw.data$inq_last_6mths <- as.character(raw.data$inq_last_6mths) #Converting into character
+raw.data$inq_last_6mths <- as.numeric(raw.data$inq_last_6mths) #Converting into numeric
+is.numeric(raw.data$inq_last_6mths) # TRUE
+anyNA(raw.data$inq_last_6mths) #missing values
+```
+
+```{r}
+index.NA <- which(is.na(raw.data$inq_last_6mths)) 
+median(raw.data$inq_last_6mths, na.rm = TRUE) #median value
+raw.data$inq_last_6mths[index.NA] <- median(raw.data$inq_last_6mths, na.rm = TRUE) #Replace missing by median 0
+anyNA(raw.data$inq_last_6mths) # FALSE (No missing values)
+```
+
+
+```{r}
+str(raw.data)
+```
+
+### Loan Status
+
+The *dependent variable* in our model is *loan_status* (i.e., we are trying to predict if a loan will be paid based on the attributes above). In the raw dataset it has 9 different values. However, in our model we will use two values Fully Paid which means that the loan was paid, and Charged Off which means that there is no longer a reasonable expectation of further payments. We will encode this variable and 1 will represent Fully Paid, while 0 will represent Charged Off.  We do the encoding in the code below:
+
+
+```{r}
+#laon_status
+class(raw.data$loan_status) #It is factor
+raw.data$loan_status <- as.character(raw.data$loan_status)
+is.character(raw.data$loan_status)
+#Taking only rows where laon_status is fully paid or charged off
+arg <- raw.data$loan_status=="Fully Paid" | raw.data$loan_status=="Charged Off"
+raw.data <- subset(raw.data, arg==TRUE) #Number of observations reduced 
+
+#Encoding loan_status 
+#0 - Charged Off, 
+#1 - Fully paid
+raw.data$loan_status <- ifelse(raw.data$loan_status=="Fully Paid",1,0)
+raw.data$loan_status <- as.integer(raw.data$loan_status) #Converting to integer
+
+is.integer(raw.data$loan_status)
+anyNA(raw.data$loan_status)
+```
+
+```{r}
+nrow(raw.data)
+```
+```{r}
+ncol(raw.data)
+```
+
+# Exploratory Data Analysis (EDA){#EDA}
+
+```{r}
+# Distribution of Interest rate
+hist(raw.data$int_rate, col = "red", main = "Distribution of Intrest rate", xlab = "Interest rate")
+
+```
+```{r}
+summary(raw.data$int_rate)
+```
+
+
+```{r}
+#Turning loan_status to factor
+raw.data$loan_status <- factor(raw.data$loan_status)
+
+```
+
+
+```{r}
+#Distribution of grade scores
+#Histogram of grade score colored by loan_status in percentage
+plot1 <- ggplot(raw.data,aes(x=grade, y=((..count..)/sum(..count..))*100))
+plot1 <- plot1 + geom_histogram(aes(fill=loan_status), color="black", stat = "count", alpha=0.6)
+plot1 <- plot1 + theme_light()
+plot1 <- plot1 + scale_fill_manual("Loan Status",values = c("red", "green")) +
+  labs(y="Percent", x="Loan Grades from A (best) to G (poor)")
+plot1 <- plot1 + ggtitle("Distribution of Loans By Grading Scores and Loan Status")
+plot1
+```
+
+```{r}
+#Making Contingency Table to check percentage of grading score in relation with unpaid loans 
+CrossTable(raw.data$grade, raw.data$loan_status,prop.r = TRUE, prop.c = FALSE, prop.t = FALSE,
+           prop.chisq = FALSE )
+```
+
+```{r}
+#Taking the highest loan purposes
+arg <- raw.data$purpose == "credit_card" | raw.data$purpose == "debt_consolidation" |
+        raw.data$purpose == "home_improvement" | raw.data$purpose == "major_purchase" | 
+        raw.data$purpose == "other"
+j <- subset(raw.data, arg==TRUE)
+
+#Making distribution of loans by purpose
+plot2 <- ggplot(j,aes(x=purpose, y=((..count..)/sum(..count..))*100))
+plot2 <- plot2 + geom_bar(aes(fill=loan_status), position = "dodge", stat = "count")
+plot2 <- plot2 + theme_bw()
+plot2 <- plot2 + scale_fill_manual("Loan Status",values = c("red", "green")) +
+  labs(y="Percent", x="Loan Purpose")
+plot2 <- plot2 + ggtitle("Distribution of Loans By Purpose")
+plot2
+
+```
+
+```{r}
+#Making Contingency Table to check percentage of grading score in relation with unpaid loans 
+CrossTable(raw.data$purpose, raw.data$loan_status,prop.r = TRUE, prop.c = FALSE, prop.t = FALSE,
+           prop.chisq = FALSE )
+```
+
+```{r}
+#Making scatter diagram to control relation between interest rates and loans grades
+plot3 <- ggplot(raw.data, aes(x=int_rate, y=sub_grade)) + geom_point(aes(color=loan_status, alpha=0.4))
+plot3 <- plot3 + theme_bw() + scale_fill_manual("Loan Status", values = c("red", "green")) +
+  labs(y="Sub Grades", x="Interest Rates")
+plot3
+
+```
+
+In the scatter plot we see a column of outliers at 0.06.  We can remove.
+
+```{r}
+#Deleting detected outliers
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="G1"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="G2"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="G3"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="G4"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="F5"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="F4"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="F3"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="F2"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="E5"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="E4"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="E3"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="E2"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="E1"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="D5"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="D4"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="D3"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="D2"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="D1"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="C5"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="C4"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="C3"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="C2"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="C1"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="B5"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="B4"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="B3"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="B2"
+raw.data <- subset(raw.data, arg==FALSE)
+
+arg <- raw.data$int_rate==0.06 & raw.data$sub_grade=="B1"
+raw.data <- subset(raw.data, arg==FALSE)
+
+```
+
+Plot again without outliers
+```{r}
+#Making 2nd scatter diagram between interest rates and loans grades
+plot3 <- ggplot(raw.data, aes(x=int_rate, y=sub_grade)) + geom_point(aes(color=loan_status, alpha=0.4))
+plot3 <- plot3 + theme_bw() + scale_fill_manual("Loan Status", values = c("red", "green")) +
+  labs(y="Sub Grades", x="Interest Rates")
+plot3
+```
+
+```{r}
+#5-number summary statistics for annual income
+summary(raw.data$annual_inc) #There are potential outliers
+
+```
+
+```{r}
+#Plotting scatter diagram to detect outliers
+plot(raw.data$annual_inc, ylab = "Annual Income")
+
+
+```
+
+```{r}
+#Removing outliers
+index.outliers <- which(raw.data$annual_inc > 1000000) #91 outliers detected
+raw.data <- raw.data[-index.outliers,] #Outliers deleted
+```
+
+```{r}
+#Plotting scatter diagram withouy outliers
+plot(raw.data$annual_inc, ylab = "Annual Income")
+```
+
+
+```{r}
+#Histogram for Annual Income
+hist(raw.data$annual_inc, col="red", xlab = "Annual Income", main = "Histogram of Annual Income")
+
+```
+
+Continue to remove outliers....
+
+```{r}
+#Removing outliers for dti
+summary(raw.data$dti)
+plot(raw.data$dti)
+
+outliers_upperlimit <- quantile(raw.data$dti, 0.75) + 1.5 * IQR(raw.data$dti) # upper_limit = 40.8
+index.outliers.dti <- which(raw.data$dti > outliers_upperlimit | raw.data$dti < 0 ) #470 outliers
+raw.data <- raw.data[-index.outliers.dti,] #Removing observations
+
+#Removing outliers for open_acc
+summary(raw.data$open_acc)
+plot(raw.data$open_acc)
+index.outliers2 <- which(raw.data$open_acc > 50 | raw.data$open_acc <0 ) #41 outliers
+raw.data <- raw.data[-index.outliers2,] #Removing observations
+
+#Removing outliers for pub_rec
+summary(raw.data$pub_rec)
+plot(raw.data$pub_rec)
+index.outliers3 <- which(raw.data$pub_rec > 20 | raw.data$pub_rec <0 ) #8 outliers
+raw.data <- raw.data[-index.outliers3,] #Removing observations
+
+#Removing outliers for delinq_2yrs
+summary(raw.data$delinq_2yrs)
+plot(raw.data$delinq_2yrs)
+index.outliers4 <- which(raw.data$delinq_2yrs > 20 | raw.data$delinq_2yrs <0 ) #7 outliers
+raw.data <- raw.data[-index.outliers4,] #Removing observations
+
+#No detecetd outliers for inq_last_6mths
+summary(raw.data$inq_last_6mths)
+plot(raw.data$inq_last_6mths)
+
+#No detecetd outliers for installment
+summary(raw.data$installment)
+plot(raw.data$installment)
+
+#Removing outliers for revol_bal
+summary(raw.data$revol_bal)
+plot(raw.data$revol_bal)
+index.outliers5 <- which(raw.data$revol_bal > 500000 | raw.data$revol_bal <0 ) #56 outliers
+raw.data <- raw.data[-index.outliers5,] #Removing observations
+
+#Removing outliers for revol_util
+summary(raw.data$revol_util)
+plot(raw.data$revol_util)
+index.outliers6 <- which(raw.data$revol_util > 2 | raw.data$revol_util <0 ) #2 outliers
+raw.data <- raw.data[-index.outliers6,] #Removing outliers
+
+#No detecetd outliers for loan_amnt
+summary(raw.data$loan_amnt)
+plot(raw.data$loan_amnt)
+
+```
+
+Reference:
+
+* [Multicollinearity and correlation matrices](https://datascienceplus.com/multicollinearity-in-r/)
+
+```{r}
+#Multicollinearity
+cor(raw.data %>% select_if(is.numeric)) #Checking multicollinearity
+```
+
+
+# Building the Model{#Build-Model}
+
+```{r}
+loan.model <- subset(raw.data, select = c(1,2,4:11,13,14,17:19)) 
+anyNA(loan.model) # No missing values
+dim(loan.model) #14 features + 1 response, 1,297,619 observations
+
+```
+
+```{r}
+#Splitting data set into training and test set
+set.seed(123) #making results reproduciable
+
+
+sample <- sample.split(loan.model$loan_status, 0.7)
+train.data <- subset(loan.model, sample==TRUE)
+test.data <- subset(loan.model, sample==FALSE)
+
+```
+
+### Logistic Regression
+
+`glm()` [function](https://www.statmethods.net/advstats/glm.html)
+
+This part takes awhile to run...
+
+```{r}
+#LOGISTIC REGRESSION
+
+logistic.regressor <- glm(loan_status ~ ., family = "binomial", data = train.data)
+summary(logistic.regressor)
+
+#Predicting outcomes on test data
+prob_pred <- predict(logistic.regressor, newdata = test.data, type = "response")
+summary(prob_pred)
+
+#Cut-off value = 0.5
+pred_cut_off <- ifelse(prob_pred > 0.5, 1,0) #Setting cut-off to be at 0.5
+table(test.data$loan_status,pred_cut_off )
+pred <- prediction(pred_cut_off,test.data$loan_status)
+perf <- performance(pred, "tpr", "fpr")
+
+```
+
+
+```{r}
+#Printing AUC Value
+perf1 <- performance(pred, "auc")
+print(perf1@y.values[[1]])
+
+
+```
+
+```{r}
+#Plotting the ROC-curve
+roc.curve(test.data$loan_status, pred_cut_off,col="red", main="The ROC-curve for Model with cut-off=0.5")
+text(0.6,0.2,paste("AUC=0.524"))
+
+
+
+```
+
+Reference:
+
+* [Confusion matrix help](https://stackoverflow.com/questions/30002013/error-in-confusion-matrix-the-data-and-reference-factors-must-have-the-same-nu)
+
+```{r}
+confusionMatrix(test.data$loan_status,as.factor(pred_cut_off ))
+```
+
+
+```{r}
+#Cut-off value = 0.8
+pred_cut_off <- ifelse(prob_pred > 0.8, 1,0) #Setting cut-off to be at 0.8
+table(test.data$loan_status,pred_cut_off )
+pred <- prediction(pred_cut_off,test.data$loan_status)
+perf <- performance(pred, "tpr", "fpr")
+
+
+```
+
+```{r}
+#Printing AUC Value
+perf1 <- performance(pred, "auc")
+print(perf1@y.values[[1]])
+
+```
+
+```{r}
+#Plotting the ROC-curve
+roc.curve(test.data$loan_status, pred_cut_off,col="red", main="The ROC-curve for Model with cut-off=0.8")
+text(0.6,0.2,paste("AUC=0.655"))
+
+
+
+```
+
+```{r}
+confusionMatrix(test.data$loan_status,as.factor(pred_cut_off ))
+```
+
+
+```{r}
+#Plotting proportion of fully paid vs charged off loans
+options(scipen=20)
+barchart(train.data$loan_status, main="Proportion of Fully Paid and Charged Off Loans (Training Set)", xlab="Number of Loans")
+
+
+```
+
+```{r}
+#Assuming investor wants to finance top 20% of new loans in his portfolio
+cutoff <- quantile(prob_pred, 0.8)
+pred_cut_20 <- ifelse(prob_pred > cutoff, 1,0)
+true.value <- as.character(test.data$loan_status)
+true.value <- as.integer(true.value)
+true_and_pred <- cbind(true.value, pred_cut_20)
+
+accepted_loans <- true_and_pred[pred_cut_20==1,1]
+bad_rate <- (sum(accepted_loans==0) / length(accepted_loans))*100 #6.69% of bad loans in his portfolio
+
+
+```
+
+```{r}
+#Building Strategy Table 
+accept_rate <- sort(seq(0,0.99,by=0.05), decreasing = TRUE)
+cutoff <- c()
+bad_rate <- c()
+for(i in 1:length(accept_rate)) {
+  cutoff[i] <- quantile(prob_pred, accept_rate[i])
+  pred_cut <- ifelse(prob_pred > cutoff[i], 1,0)
+  true.value <- as.character(test.data$loan_status)
+  true.value <- as.integer(true.value)
+  true_and_pred <- cbind(true.value, pred_cut)
+  accepted_loans <- true_and_pred[pred_cut==1,1]
+  bad_rate[i] <- (sum(accepted_loans==0) / length(accepted_loans))
+}
+
+#Making Strategy Table
+strategy <- cbind(1 - accept_rate, cutoff, bad_rate)
+colnames(strategy) <- c("Accept Rate","Cut-off Value", "Bad Rate")
+strategy <- as.data.frame(strategy)
+
+
+```
+
+```{r}
+#Plotting Strategy Curve
+curve <- as.matrix(strategy[-2])
+curve[,2] <- curve[,2]
+plot(curve, type="l",col="dark red", lwd=3, main="Strategy Curve")
+
+
+```
+
+### Try to improve model by balanced data
+
+**ROSE** (Random Over-Sampling Ex- amples) is a [bootstrap-based technique](https://journal.r-project.org/archive/2014/RJ-2014-008/RJ-2014-008.pdf) which aids the task of binary classification in the presence of imbalanced classes. It handles both continuous and categorical data and produces a synthetic, possibly balanced, sample of data simulated according to a smoothed-bootstrap approach.
+
+References:
+
+* [Testing imbalanced data on Credit Card Fraud Detection](https://www.kaggle.com/pritamjena/testing-the-imbalanced-data-using-rose-package)
+
+* [Subsampling for class imbalance](https://topepo.github.io/caret/subsampling-for-class-imbalances.html)
+
+* [ROSE and SMOTE oversampling methods](https://stats.stackexchange.com/questions/166458/rose-and-smote-oversampling-methods)
+
+```{r}
+# ROSE package requires numeric data or categorical data as factor.  Since categorical data is right now chracter, convert.
+
+str(train.data)
+colnames(train.data %>% select_if(Negate(is.numeric)))
+```
+
+```{r}
+
+train.data$grade <- as.factor(train.data$grade)
+train.data$emp_length <- as.factor(train.data$emp_length)
+train.data$home_ownership <- as.factor(train.data$home_ownership)
+train.data$addr_state <- as.factor(train.data$addr_state)
+train.data$issue_d <- as.factor(train.data$issue_d)
+
+str(train.data)
+```
+
+
+```{r}
+#Making balanced data using SDG method
+balanced.data <- ROSE(loan_status ~ ., data = train.data, seed = 1)$data
+
+# check (im)balance of new data
+table(balanced.data$loan_status) #Now we have almost 50% 50%
+
+```
+
+How to read the ROSE function above:
+- The first argument (loan_status ~ .) is the `formula` object.  It is often used to denote a statistical model, where the part to the left of the `~` is the response variable and the part to the right of the `~` are the explanatory variables. Using the dot (`.`) means "all variables not yet used" from train.data.
+
+So in English you'd say something like, loan_status depends on grade, open_acc, pub_rec, ..., etc.
+
+`help("~")` or `help("formula")` will teach you more.
+
+The `$` allows you extract elements by name from a named list. For example if you run `names(ROSE(loan_status ~ ., data = tdn, seed = 1))` you get `[1] "Call"   "method" "data"  `.
+So ROSE(loan_status ~ ., data = tdn, seed = 1)$data let's you store just the data part into balanced.data.
+
+References:
+
+* [Meaning of tilda](https://stackoverflow.com/questions/14976331/use-of-tilde-in-r-programming-language/14976479)
+
+* [Meaning of $](https://stackoverflow.com/questions/42560090/what-is-the-meaning-of-the-dollar-sign-in-r-function)
+
+
+```{r}
+#Building new logistic regression model
+rose.regressor <- glm(loan_status ~ ., family = "binomial", data = balanced.data)
+summary(rose.regressor)
+
+```
+
+```{r}
+#Making predictions on test set
+prob_pred_rose <- predict(rose.regressor, newdata = test.data, type="response")
+hist(prob_pred_rose)
+```
+
+```{r}
+#Evaluating new model
+roc.curve(test.data$loan_status, prob_pred_rose, col="dark red", main="The ROC-curve for Improved Model")
+text(0.6,0.2,paste("AUC=0.713"))
+```
+
+### Notes on using R Notebook:
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
