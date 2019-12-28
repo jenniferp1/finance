@@ -13,11 +13,12 @@ This work herein was informed by a number of resources and references:
 ## General
 * [DataCamp](https://www.datacamp.com/community/tutorials)
 
-## Loan Prediction
+## Loan Prediction and Analysis
 * [Loan Default and Profitability Prediction](http://cs229.stanford.edu/proj2018/report/69.pdf) by Peiqian Li and Gao Han
 * [Loan Repayment Prediction Using Machine Learning](https://escholarship.org/uc/item/9cc4t85b) by Chang Han
 * [Loan Risk Analysis with XGBoost](https://databricks.com/blog/2018/08/09/loan-risk-analysis-with-xgboost-and-databricks-runtime-for-machine-learning.html) by Amy Wang and Denny Lee
 * [Lending Analysis and Default Rate Prediction](https://canvas.harvard.edu/courses/12656/files/2822174/download?verifier=cwyLD199GhxwqW1TKTESsPVfaaNJWX0lqZBDfSns&wrap=1) by Qing Zhao
+* [A Principal Decision: The Case of Lending Club](http://web.csulb.edu/~jchang9/files/jonathan_guzman_honors_thesis.pdf) by Jonathan Ricardo Guzman 
 
 ## Machine Learning and Deep Learning in Finance
 * [Financial Machine Learning](https://github.com/firmai/financial-machine-learning/blob/master/README.md) by Derek Snow
