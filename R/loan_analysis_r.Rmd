@@ -1,0 +1,555 @@
+---
+title: "Loan Analysis"
+output:
+  html_document:
+    df_print: paged
+---
+
+## <font color="red">Important -- Read This First!"</font>
+
+If you cloned this notebook from GitHub, you will need to either <br>
+1. Download the *loan.csv* file from Kaggle (link given under [Datasets](#Datasets)) or  
+2. Unzip the *LCloan.csv.bz3* from the [data](./data) folder.
+
+If you download from Kaggle, you will need to rename *loan.csv* to *LCloan.csv* and save it in the [data folder](./data).
+
+# Introduction 
+
+### Loan Risk Prediction using Lending Club Data
+
+**Keywords**: Lending Club, loan analysis, exploratory data analysis, correlation analysis
+
+In this notebook we look at the application of *Logistic Regression* to predictions whether a loan will be fully repaid or not, and how we can use prediction models when deciding about investments. The prediction model is built using historical data from [Lending Club](https://www.kaggle.com/wendykan/lending-club-loan-data) for period from 2007 until 2015. 
+
+Logistic regression has the same idea as linear regression. The difference is that with logistic regression we try to predict qualitative response (output is categorical variable).
+
+#### Goal
+
+This is part of series of notbooks looking at loans using Lending Club data.  The goal is to illustrate the steps and challenges analyzing and modeling loan-related data using exploratory analysis techniques, [linear regression](../Python/interests_rates_linreg.ipynb), and [logistic regression](loan_risk_logit.Rmd).
+
+#### About Lending Club
+
+The [Lending Club](https://www.lendingclub.com/) is an online marketplace for personal loans that matches borrowers who are seeking a loan with investors looking to lend money and make a return. Each borrower fills out a comprehensive application, providing their past financial history, the reason for the loan, and more. Lending Club evaluates each borrower’s credit score using past historical data and assigns an interest rate to the borrower. 
+
+The benefit to us is that some of these data have been made available to us for analysis. While loan data excludes personally identifiable information, it does include attributes like FICO score, location, annual income, lines of credit, and descriptions of why the applicant needs the loan.
+
+# Datasets{#Datasets}
+
+There are several sources of Lending Club data that you might be able to use to test the code:
+
+* [Kaggle option 1](https://www.kaggle.com/wendykan/lending-club-loan-data)
+
+* [Kaggle option 2](https://www.kaggle.com/wordsforthewise/lending-club)
+
+* [Data World](https://data.world/jaypeedevlin/lending-club-loan-data-2007-11) (data from 2007)
+
+* [Lending Club](https://www.lendingclub.com/auth/login?login_url=%2Finfo%2Fdownload-data.action)
+
+Here we use the first Kaggle dataset (option 1).
+
+These data contain complete loan data for all loans issued through the 2007-2015, including the current loan status (Current, Late, Fully Paid, etc.) and latest payment information. The file containing loan data through the "present" contains complete loan data for all loans issued through the previous completed calendar quarter. Additional features include credit scores, number of finance inquiries, address including zip codes, and state, and collections among others. A [data dictionary](./data/LCDataDictionary.xlsx) is provided in a separate file.
+
+# Sections
+1. [Setting up](#Setup)
+2. [Exploratory Analysis](#EDA)
+    - [Numeric Variable Analysis](#NVA)
+    - [Categorical Variable Analysis](#CVA)
+    - [Correlation Analysis](#CorrAnal)
+
+
+
+\newline<br />
+\newline<br />
+
+
+**Hint**: To excute code chunks, click the *Run* button within the chunk or place your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+\newline<br />
+\newline<br />
+
+# Setting up{#Setup}
+```{r}
+# define used libraries
+libraries_used <- 
+  c("lazyeval", "readr","plyr" ,"dplyr", "readxl", "ggplot2", 
+    "funModeling", "scales", "tidyverse", "corrplot", "GGally", "caret",
+    "rpart", "randomForest", "pROC", "gbm", "choroplethr", "choroplethrMaps",
+    "microbenchmark", "doParallel", "e1071", "data.table", "Hmisc",
+    "PerformanceAnalytics")
+
+## Uncomment below if you think you need packages installed
+# # check missing libraries
+# libraries_missing <- 
+#   libraries_used[!(libraries_used %in% installed.packages()[,"Package"])]
+# # install missing libraries
+# if(length(libraries_missing)) install.packages(libraries_missing, dependencies = TRUE)
+```
+
+```{r}
+sessionInfo()
+```
+
+```{r}
+# load libraries
+lapply(libraries_used, require, character.only = TRUE)
+```
+
+
+```{r}
+# Import data
+loans <- fread("./data/LCloan.csv")
+colnames(loans)
+dim(loans)
+```
+
+# Exploratory Analysis{#EDA}
+
+### [Numeric Variable Analysis]{#NVA}
+
+Let's build histograms for some of the numeric attributes in our dataset:
+- Annual Income (annual_inc)
+- Installment (installment)
+- Loan Interest Rates (int_rate)
+- Loan Amounts (loan_amnt)
+- Open Credit Line Accounts (open_acc)
+- Total Paid (tot_paid)
+
+
+Let's start with **Annual Income**.  We'll look first at a summary of the incomes.
+
+```{r}
+summary(loans$annual_inc)
+```
+
+We see there are NA's.  Let's save loans to a new data frame: loans.nona.  We'll remove the NA's for just annual income since that's the variable we're looking at now.
+
+Reference: [Filter NAs](https://blog.exploratory.io/filter-data-with-dplyr-76cf5f1a258e)
+
+Reference: [Delete columns with only NAs](https://stackoverflow.com/questions/15968494/how-to-delete-columns-that-contain-only-nas)
+
+Reference: [Remove columns with some NAs](https://stackoverflow.com/questions/12454487/remove-columns-from-dataframe-where-some-of-values-are-na)
+
+Reference: [Drop NAs with tidyverse](https://stackoverflow.com/questions/48658832/how-to-remove-row-if-it-has-a-na-value-in-one-certain-column)
+
+Reference: [Conditional Statements](https://mgimond.github.io/ES218/Week03a.html#conditional_statements)
+
+```{r}
+
+loans.nona <- loans %>% filter(!is.na(annual_inc))
+summary(loans.nona$annual_inc)
+```
+
+OK. NA's are removed.  Now let's look at the Max and Min.  We see a huge spread.  Let's take anything > $200,000 and set it to 200,000 so we can make the histogram work.
+
+Reference: [If_Else](https://blog.rstudio.com/2016/06/27/dplyr-0-5-0/)
+
+```{r}
+loans.nona$annual_inc <- if_else(loans.nona$annual_inc > 200000, 200000,
+                  loans.nona$annual_inc)
+
+#Check that maximum $ was reset to 200000
+loans.nona %>% summarise(min_inc = min(annual_inc),
+                                    max_inc=max(annual_inc))
+```
+
+Do same for minimum income
+
+```{r}
+summary(loans.nona$annual_inc[loans.nona$annual_inc > 0])
+summary(loans.nona$annual_inc[loans.nona$annual_inc > 100])
+summary(loans.nona$annual_inc[loans.nona$annual_inc > 1000])
+```
+
+Let's set any income < $1000 to 1000
+
+```{r}
+loans.nona$annual_inc <- if_else(loans.nona$annual_inc < 1000, 1000,
+                  loans.nona$annual_inc)
+
+#Check that maximum $ was reset to 200000
+loans.nona %>% summarise(min_inc = min(annual_inc),
+                                    max_inc=max(annual_inc))
+```
+
+Now we build our histogram
+
+Reference: [ggplot](http://www.sthda.com/english/wiki/ggplot2-title-main-axis-and-legend-titles)
+```{r}
+
+ggplot(loans.nona, aes(x=annual_inc)) + geom_histogram(bins=20,
+                                            colour='black', size=0.25) + ggtitle("Borrower Annual Income") + xlab("Annual Income") + ylab("Loan Count")
+
+```
+
+The distribution is right (positively) skewed.  Most borrowers make less than $100,000 annually but we see there are some outliers with incomes greater than $200,000 annually
+
+Repeat with next attribute: **Installment**
+
+```{r}
+summary(loans$installment)
+```
+
+The spread looks okay and no NA's so we can skip some of the steps needed for annual income and go straight to the historgram!
+
+```{r}
+ggplot(loans, aes(x=installment)) + geom_histogram(bins=20,
+                                            colour='black', size=0.25) + ggtitle("Installment") + xlab("Installment") + ylab("Loan Count")
+```
+
+
+Repeat with next attribute: **Loan Interest Rates**
+
+```{r}
+summary(loans$int_rate)
+
+ggplot(loans, aes(x=int_rate)) + geom_histogram(bins=20,
+                                            colour='black', size=0.25) + ggtitle("Loan Interest Rates") + xlab("Interest Rate (%)") + ylab("Loan Count")
+```
+
+**Loan amounts**
+
+```{r}
+summary(loans$loan_amnt)
+
+ggplot(loans, aes(x=loan_amnt)) + geom_histogram(bins=20,
+                                            colour='black', size=0.25) + ggtitle("Loan Amounts") + xlab("Loan Amount") + ylab("Loan Count")
+```
+
+**Open Credit Line Accounts**
+
+Reference: [setting y limits](https://stackoverflow.com/questions/32505298/explain-ggplot2-warning-removed-k-rows-containing-missing-values)
+
+Reference: [setting x limits](https://stackoverflow.com/questions/43475764/ggplot-non-finite-values-error)
+
+Reference: [geom_bar warning](https://github.com/tidyverse/ggplot2/issues/2879)
+
+```{r}
+summary(loans$open_acc)
+# class(loans$open_acc)
+
+#Remove NA's
+loans.nona <- loans %>% filter(!is.na(open_acc))
+
+#Condense max
+loans.nona$open_acc <- if_else(as.numeric(loans.nona$open_acc) > 50, 50,
+                  as.numeric(loans.nona$open_acc))
+
+#Check that maximum was reset to 50
+loans.nona %>% summarise(min_open = min(open_acc),
+                                    max_open=max(open_acc))
+
+summary(loans.nona$open_acc)
+
+ggplot(loans.nona, aes(x=open_acc)) + geom_histogram(bins=27,
+                                            colour='black', size=0.25) + 
+  ggtitle("Open Credit Line Accounts") + xlab("Open Accounts") + ylab("Loan Count")
+```
+
+**Total Paid**
+
+```{r}
+summary(loans$total_pymnt)
+
+ggplot(loans, aes(x=total_pymnt)) + geom_histogram(bins=25,
+                                            colour='black', size=0.25) + ggtitle("Total Paid") + xlab("Total Payments") + ylab("Loan Count")
+```
+
+Conclusion: Most of our distributions are right or positively skewed. Respective to a majority of variables in our dataset, it makes sense that these observations have a greater mean than median. 
+
+### [Categorical Variable Analysis]{#CVA}
+
+Let's build boxplots for some of the categorical attributes in our dataset:
+- Total paid by purpose (total_pymnt, purpose)
+- Loan amount by purpose (loam_amnt, purpose)
+- Total paid by loan grade (total_pymnt, grade)
+- Total paid by employment length (total_pymnt, emp_length )
+- Total paid by loan status (total_pymnt, loan_status)
+
+**Total paid by purpose**
+
+Let's look at what the different categories (purposes) for the loans are
+
+```{r}
+unique(loans$purpose)
+```
+
+Now for a boxplot using ggplot
+
+Reference: [ggplot boxplots](https://stackoverflow.com/questions/20841733/ggplot2-boxplot-only-shows-flat-lines)
+
+```{r}
+ggplot(loans, aes(y=total_pymnt, x=purpose)) +
+  geom_boxplot(outlier.colour="black", outlier.shape=1,
+                outlier.size=0.7) + coord_flip() + ylab("Total Paid") +
+  xlab("Purpose") + ggtitle("Total Paid by Purpose")
+```
+
+**Loan amount by purpose** 
+
+```{r}
+ggplot(loans, aes(y=loan_amnt, x=purpose)) +
+  geom_boxplot(outlier.colour="black", outlier.shape=1,
+                outlier.size=0.7) + coord_flip() + ylab("Loan Amount") +
+  xlab("Purpose") + ggtitle("Loan Amount by Purpose")
+```
+
+
+**Total paid by loan grade**
+
+```{r}
+ggplot(loans, aes(y=total_pymnt, x=grade)) +
+  geom_boxplot(outlier.colour="black", outlier.shape=1,
+                outlier.size=0.7) + coord_flip() + ylab("Total Paid") +
+  xlab("Loan Grade") + ggtitle("Total Paid by Loan Grade")
+```
+
+**Total paid by employment length**
+
+```{r}
+ggplot(loans, aes(y=total_pymnt, x=emp_length)) +
+  geom_boxplot(outlier.colour="black", outlier.shape=1,
+                outlier.size=0.7) + coord_flip() + ylab("Total Paid") +
+  xlab("Employment Length") + ggtitle("Total Paid by Employment Length")
+```
+
+**Total paid by loan status**
+
+```{r}
+ggplot(loans, aes(y=total_pymnt, x=loan_status)) +
+  geom_boxplot(outlier.colour="black", outlier.shape=1,
+                outlier.size=0.7) + coord_flip() + ylab("Total Paid") +
+  xlab("Loan Status") + ggtitle("Total Paid by Loan Status")
+```
+
+
+**Bonus** You can reduce the number of categories in purpose to bucket things a bit
+
+```{r}
+loans.reduc <- loans
+```
+
+
+```{r}
+# reduce the number of categories of purpose
+loans.reduc <- mutate(loans.reduc, purpose_new = 
+                       ifelse(purpose == "credit_card" | 
+                              purpose == "debt_consolidation", "debt",
+                       ifelse(purpose == "car" | 
+                              purpose == "major_purchase" | 
+                              purpose == "vacation" | 
+                              purpose == "wedding" | 
+                              purpose == "medical" | 
+                              purpose == "other", "purchase",
+                       ifelse(purpose == "house" | 
+                              purpose == "home_improvement" | 
+                              purpose == "moving" | 
+                              purpose == "renewable_energy", "home_imprv",
+                       purpose))))
+
+```
+
+```{r}
+unique(loans.reduc$purpose_new)
+```
+
+
+**Bonus** You can also use boxplot instead of ggplot
+
+Reference: [boxplots for credit modeling](https://datascienceplus.com/visualizations-for-credit-modeling-in-r/)
+
+Reference: [boxplot tutorial](https://www.r-bloggers.com/box-plot-with-r-tutorial/)
+
+```{r}
+# Box plot interest rate & purpose
+boxplot(total_pymnt ~ purpose_new, col="darkgreen", horizontal=T, names = c(
+  "debt", "home", "purch", "biz", "edu"), las=2, data=loans.reduc)
+# Boxplot interest rate & grade 
+boxplot(int_rate ~ grade, col="darkgreen", horizontal=F, data=loans)
+```
+
+
+Conclusion:  Looking at our boxplots, it is clear to see that many extreme outliers are present in each one of our graphs. This reflects the point above about how many of our distributions are positively skewed. This illustrates the challenges of modeling (machine learning) because of the extreme outliers.  This is why data cleaning is such an important step after you've gotten familiar with your dataset.
+
+
+### [Correlation Analysis]{#CorrAnal}
+
+There are different ways to visualize correlation.  Below are some examples.
+
+One library offering this is `corrplot` with its main function `corrplot::corrplot()`. The function takes as input the correlation matrix that can be produced with `stats::cor()`. This of course is only defined for numeric, non-missing variables. In order to have a reasonable information density in the correlation matrix, we will kick out some variables with a missing value share of larger 50%.
+
+```{r}
+# look at numeric variables
+num_vars <- 
+  loans %>% 
+  select_if(is.numeric) %>% 
+  names()
+
+num_vars %>% knitr::kable()
+
+```
+
+```{r}
+loans.num <- loans %>% select(num_vars)
+```
+
+
+The function `funModeling::df_status()` has parameter `print_results = TRUE` set by default which means the data will be assigned and printed at the same time.
+
+```{r}
+
+meta_loans <- funModeling::df_status(loans.num, print_results = FALSE)
+knitr::kable(meta_loans)
+```
+
+Some variables have only one unique value, which are not useful for any analysis or model buidling.
+
+For improved readability, we use the scales::percent() function to convert output to percent.
+
+```{r}
+meta_loans <-
+  meta_loans %>%
+  mutate(uniq_rat = unique / nrow(loans))
+
+meta_loans %>%
+  select(variable, unique, uniq_rat) %>%
+  mutate(unique = unique, uniq_rat = scales::percent(uniq_rat)) %>%
+  knitr::kable()
+```
+
+```{r}
+meta_loans <- funModeling::df_status(loans.num, print_results = FALSE)
+
+meta_loans %>%
+  select(variable, p_zeros, p_na, unique) %>%
+  filter_(~ variable %in% num_vars) %>%
+  knitr::kable()
+```
+
+Let's drop anything with NA's more than 80%
+Let's drop anything with zeros more than 80%
+Let's drop anything with unique less than 1000
+
+```{r}
+meta_loans <- meta_loans %>% filter(p_na < 80 & p_zeros < 80 & unique > 1000)
+
+meta_loans %>%
+  select(variable, p_zeros, p_na, unique) %>%
+  filter_(~ variable %in% num_vars) %>%
+  knitr::kable()
+```
+
+```{r}
+corr_vars <- dplyr::pull(meta_loans, variable)
+
+corr_vars %>% knitr::kable()
+
+```
+
+Reference: [correlation plot text size](https://stackoverflow.com/questions/5359619/r-change-size-of-axis-labels-for-corrplot)
+
+```{r}
+
+loans.corr <- loans %>% select(corr_vars)
+dim(loans.corr)
+
+LC <- cor(loans.corr, use = "complete.obs")
+
+corrplot::corrplot(LC,
+                   method = "pie", type = "upper", 
+                   tl.cex= 17/ncol(loans.corr))
+
+corrplot(LC, type="upper", order="hclust",
+         tl.col = "black", tl.srt = 35,
+         tl.cex= 17/ncol(loans.corr))
+
+```
+
+
+```{r}
+#round(LC, 2)
+```
+
+
+```{r}
+LC2 <- rcorr(as.matrix(loans.corr))
+
+#Extract the correlation coefficients
+#LC2$r
+```
+
+```{r}
+#extract p-values
+#LC2$P
+```
+
+```{r}
+# ++++++++++++++++++++++++++++
+# flattenCorrMatrix
+# ++++++++++++++++++++++++++++
+# cormat : matrix of the correlation coefficients
+# pmat : matrix of the correlation p-values
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+
+
+LC2<-rcorr(as.matrix(loans.corr[,1:7]))
+flattenCorrMatrix(LC2$r, LC2$P)
+```
+
+```{r}
+corrplot(LC2$r, type="upper", order="hclust", 
+         p.mat = LC2$P, sig.level = 0.01, insig = "blank")
+```
+
+```{r}
+#warning this will take awhile to run
+
+chart.Correlation(loans.corr[,1:7], histogram=TRUE, pch=19)
+```
+
+```{r}
+col<- colorRampPalette(c("blue", "white", "red"))(20)
+heatmap(x = LC, col = col, symm = TRUE)
+```
+
+Rather than a visual inspection, an (automatic) inspection of correlations and removal of highly correlated features can be done via function `caret::findCorrelation()` with a defined cutoff parameter. 
+
+```{r}
+caret::findCorrelation(cor(loans.corr, use = "complete.obs"), 
+                       names = TRUE, cutoff = .5)
+```
+
+Conclusion: Our correlation anlaysis indicates there is potential multicollinearity found between some of the independent variables. If multicollinearity is indeed detected as we conduct our models, then we will need to remove one of these variables.
+
+Given above, we remove a few variables
+
+```{r}
+vars_to_remove <- 
+  c("funded_amnt" , "loan_amnt", "funded_amnt_inv", "installment", 
+    "total_pymnt_inv", "total_pymnt", "tot_hi_cred_lim", "tot_cur_bal", 
+    "total_rev_hi_lim", "total_bal_ex_mort",  "total_bc_limit",
+    "revol_bal",  "out_prncp_inv", "total_il_high_credit_limit", 
+    "bc_open_to_buy",   "last_pymnt_amnt",  "revol_util"    )
+
+train <- loans %>% select(-one_of(vars_to_remove))
+```
+
+Once you have a feel of the data, have your features selected, and the data cleaned, you can start to consider your modeling options.
+
+\newline<br />
+\newline<br />
+
+### Notes on using R Notebook:
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
