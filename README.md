@@ -10,9 +10,10 @@ The examples in this repository are written in both <b>`Python`</b> (Jupyer note
 This work herein was informed by a number of resources and references:
 
 1. [General](#General)
-2. [Loan Prediction](#loan-prediction)
-3. [Machine Learning and Deep Learning in Finance](#machine-learning-and-deep-learning-in-finance)
-4. [Financial Analysis & Economics](#financial-analysis--economics)
+2. [Loan Prediction](#loan-prediction-and-analysis)
+3. [Credit Risk Modeling](#credit-risk-modeling)
+4. [Machine Learning and Deep Learning in Finance](#machine-learning-and-deep-learning-in-finance)
+5. [Financial Analysis & Economics](#financial-analysis--economics)
 
 ## General
 * [DataCamp](https://www.datacamp.com/community/tutorials)
@@ -23,6 +24,10 @@ This work herein was informed by a number of resources and references:
 * [Loan Risk Analysis with XGBoost](https://databricks.com/blog/2018/08/09/loan-risk-analysis-with-xgboost-and-databricks-runtime-for-machine-learning.html) by Amy Wang and Denny Lee
 * [Lending Analysis and Default Rate Prediction](https://canvas.harvard.edu/courses/12656/files/2822174/download?verifier=cwyLD199GhxwqW1TKTESsPVfaaNJWX0lqZBDfSns&wrap=1) by Qing Zhao
 * [A Principal Decision: The Case of Lending Club](http://web.csulb.edu/~jchang9/files/jonathan_guzman_honors_thesis.pdf) by Jonathan Ricardo Guzman 
+
+## Credit Risk Modeling
+[Credit Card Default](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
+[Credit Risk Modeling Projects](https://www.listendata.com/2019/08/datasets-for-credit-risk-modeling.html)
 
 ## Machine Learning and Deep Learning in Finance
 * [Financial Machine Learning](https://github.com/firmai/financial-machine-learning/blob/master/README.md) by Derek Snow
