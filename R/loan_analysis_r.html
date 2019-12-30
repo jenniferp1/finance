@@ -1645,14 +1645,19 @@ summary {
 </div>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<div id="loan-risk-prediction-using-lending-club-data" class="section level3">
-<h3>Loan Risk Prediction using Lending Club Data</h3>
+<div id="loan-analysis-using-lending-club-data" class="section level3">
+<h3>Loan Analysis using Lending Club Data</h3>
 <p><strong>Keywords</strong>: Lending Club, loan analysis, exploratory data analysis, correlation analysis</p>
-<p>In this notebook we look at the application of <em>Logistic Regression</em> to predictions whether a loan will be fully repaid or not, and how we can use prediction models when deciding about investments. The prediction model is built using historical data from <a href="https://www.kaggle.com/wendykan/lending-club-loan-data">Lending Club</a> for period from 2007 until 2015.</p>
-<p>Logistic regression has the same idea as linear regression. The difference is that with logistic regression we try to predict qualitative response (output is categorical variable).</p>
+<p>In this notebook we review some steps in loan analysis, specifically exploratory analysis. To do this we employ several ways to visualize the data. This includes:</p>
+<ul>
+<li>Correlation plots</li>
+<li>Histograms</li>
+<li>Five-number summaries and Boxplots</li>
+</ul>
+<p>This work uses historical data from <a href="https://www.kaggle.com/wendykan/lending-club-loan-data">Lending Club</a> for period from 2007 until 2015.</p>
 <div id="goal" class="section level4">
 <h4>Goal</h4>
-<p>This is part of series of notbooks looking at loans using Lending Club data. The goal is to illustrate the steps and challenges analyzing and modeling loan-related data using exploratory analysis techniques, <a href="../Python/interests_rates_linreg.ipynb">linear regression</a>, and <a href="loan_risk_logit.Rmd">logistic regression</a>.</p>
+<p>This is part of a series of notbooks looking at loans using Lending Club data. The goal is to illustrate the steps and challenges for analyzing and modeling loan-related data using exploratory analysis techniques, <a href="../Python/interests_rates_linreg.ipynb">linear regression</a>, and <a href="loan_risk_logit.Rmd">logistic regression</a>. This notebook covers aspects of exploratory data analysis and visualization. Follow the hyperlinks above to look at linear regression (used to predict loan interests rates) and logistic regression (used to assess loan default risk).</p>
 </div>
 <div id="about-lending-club" class="section level4">
 <h4>About Lending Club</h4>
@@ -1683,8 +1688,6 @@ summary {
 <li><a href="#CVA">Categorical Variable Analysis</a></li>
 <li><a href="#CorrAnal">Correlation Analysis</a></li>
 </ul></li>
-<li><a href>Correlation Analysis</a></li>
-<li><a href></a></li>
 </ol>
 <p><br /> <br /></p>
 <p><strong>Hint</strong>: To excute code chunks, click the <em>Run</em> button within the chunk or place your cursor inside it and pressing <em>Ctrl+Shift+Enter</em>.</p>
@@ -1777,11 +1780,11 @@ lapply(libraries_used, require, character.only = TRUE)</code></pre>
 ## 
 ##     col_factor</code></pre>
 <pre><code>## Loading required package: tidyverse</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──</code></pre>
+<pre><code>## ── Attaching packages ────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──</code></pre>
 <pre><code>## ✓ tibble  2.1.3     ✓ stringr 1.4.0
 ## ✓ tidyr   1.0.0     ✓ forcats 0.4.0
 ## ✓ purrr   0.3.3</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>## ── Conflicts ───────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
 ## x dplyr::arrange()     masks plyr::arrange()
 ## x scales::col_factor() masks readr::col_factor()
 ## x purrr::compact()     masks plyr::compact()

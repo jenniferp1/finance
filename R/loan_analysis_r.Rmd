@@ -5,7 +5,7 @@ output:
     df_print: paged
 ---
 
-## <font color="red">Important -- Read This First!"</font>
+## <font color="red">"Important -- Read This First!"</font>
 
 If you cloned this notebook from GitHub, you will need to either <br>
 1. Download the *loan.csv* file from Kaggle (link given under [Datasets](#Datasets)) or  
@@ -15,17 +15,22 @@ If you download from Kaggle, you will need to rename *loan.csv* to *LCloan.csv* 
 
 # Introduction 
 
-### Loan Risk Prediction using Lending Club Data
+### Loan Analysis using Lending Club Data
 
 **Keywords**: Lending Club, loan analysis, exploratory data analysis, correlation analysis
 
-In this notebook we look at the application of *Logistic Regression* to predictions whether a loan will be fully repaid or not, and how we can use prediction models when deciding about investments. The prediction model is built using historical data from [Lending Club](https://www.kaggle.com/wendykan/lending-club-loan-data) for period from 2007 until 2015. 
+In this notebook we review some steps in loan analysis, specifically exploratory analysis.  To do this we employ several ways to visualize the data.  This includes:
 
-Logistic regression has the same idea as linear regression. The difference is that with logistic regression we try to predict qualitative response (output is categorical variable).
+- Correlation plots
+- Histograms
+- Five-number summaries and Boxplots 
+
+This work uses historical data from [Lending Club](https://www.kaggle.com/wendykan/lending-club-loan-data) for period from 2007 until 2015. 
+
 
 #### Goal
 
-This is part of series of notbooks looking at loans using Lending Club data.  The goal is to illustrate the steps and challenges analyzing and modeling loan-related data using exploratory analysis techniques, [linear regression](../Python/interests_rates_linreg.ipynb), and [logistic regression](loan_risk_logit.Rmd).
+This is part of a series of notbooks looking at loans using Lending Club data.  The goal is to illustrate the steps and challenges for analyzing and modeling loan-related data using exploratory analysis techniques, [linear regression](../Python/interests_rates_linreg.ipynb), and [logistic regression](loan_risk_logit.Rmd).  This notebook covers aspects of exploratory data analysis and visualization.  Follow the hyperlinks above to look at linear regression (used to predict loan interests rates) and logistic regression (used to assess loan default risk).
 
 #### About Lending Club
 
