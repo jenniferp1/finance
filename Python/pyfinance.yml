@@ -115,6 +115,7 @@ dependencies:
   - requests_cache=0.4.13=py_0
   - scikit-learn=0.22=py37hcdab131_1
   - scipy=1.4.1=py37h921218d_0
+  - seaborn=0.9.0=py_2
   - send2trash=1.5.0=py_0
   - setuptools=42.0.2=py37_0
   - six=1.13.0=py37_0
@@ -150,6 +151,7 @@ dependencies:
     - pandas-datareader==0.8.1
     - pyqt5-sip==4.19.18
     - pyqtwebengine==5.12.1
+    - researchpy==0.1.8
     - yfinance==0.1.52
 prefix: /home/jennifp3/miniconda3/envs/finance
 
