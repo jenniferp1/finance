@@ -1,7 +1,8 @@
 # Financial Analytics
 Code related to financial modeling exercises.
 
-keywords: "machine learning", "supervised learning", "classification", "linear regression", "logistic regression", "exploratory analysis", "loans", "credit risk"
+keywords: 
+> "machine learning", "supervised learning", "classification", "linear regression", "logistic regression", "exploratory analysis", "loans", "credit risk"
 
 The examples in this repository are written in both <b>`Python`</b> (Jupyer notebooks) and <b>`R`</b> (R Studio).
 
