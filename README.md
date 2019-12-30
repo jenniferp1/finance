@@ -26,8 +26,8 @@ This work herein was informed by a number of resources and references:
 * [A Principal Decision: The Case of Lending Club](http://web.csulb.edu/~jchang9/files/jonathan_guzman_honors_thesis.pdf) by Jonathan Ricardo Guzman 
 
 ## Credit Risk Modeling
-[Credit Card Default](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
-[Credit Risk Modeling Projects](https://www.listendata.com/2019/08/datasets-for-credit-risk-modeling.html)
+* [Credit Card Default](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
+* [Credit Risk Modeling Projects](https://www.listendata.com/2019/08/datasets-for-credit-risk-modeling.html)
 
 ## Machine Learning and Deep Learning in Finance
 * [Financial Machine Learning](https://github.com/firmai/financial-machine-learning/blob/master/README.md) by Derek Snow
