@@ -2,7 +2,7 @@
 Code related to financial modeling exercises.
 
 keywords: 
-> "machine learning", "supervised learning", "classification", "linear regression", "logistic regression", "exploratory analysis", "loans", "credit risk", "financing"
+> "machine learning", "supervised learning", "classification", "linear regression", "logistic regression", "time series", "exploratory analysis", "loans", "credit risk", "financing"
 
 ## Repository Description
 The examples in this repository are written in both <b>`Python`</b> (Jupyer notebooks) and <b>`R`</b> (R Studio).
@@ -12,8 +12,9 @@ This work herein was informed by a number of resources and references:
 1. [General](#General)
 2. [Loan Prediction](#loan-prediction-and-analysis)
 3. [Credit Risk Modeling](#credit-risk-modeling)
-4. [Machine Learning and Deep Learning in Finance](#machine-learning-and-deep-learning-in-finance)
-5. [Financial Analysis & Economics](#financial-analysis--economics)
+4. [Time Series Analysis](#time-series-analysis)
+5. [Machine Learning and Deep Learning in Finance](#machine-learning-and-deep-learning-in-finance)
+6. [Financial Analysis & Economics](#financial-analysis--economics)
 
 ## General
 * [DataCamp](https://www.datacamp.com/community/tutorials)
@@ -28,6 +29,11 @@ This work herein was informed by a number of resources and references:
 ## Credit Risk Modeling
 * [Credit Card Default](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
 * [Credit Risk Modeling Projects](https://www.listendata.com/2019/08/datasets-for-credit-risk-modeling.html)
+
+## Time Series Analysis
+* [AR(1) Time Series Process](https://www.math.utah.edu/~zhorvath/ar1.pdf) by Zsuzsanna Horvath and Ryan Johnston
+* [Autoregression Models for Time Series Forecasting With Python](https://machinelearningmastery.com/autoregression-models-time-series-forecasting-python/) by Jason Brownlee
+* [Time Series & Autocorrelation](https://online.stat.psu.edu/stat501/lesson/14) Penn State
 
 ## Machine Learning and Deep Learning in Finance
 * [Financial Machine Learning](https://github.com/firmai/financial-machine-learning/blob/master/README.md) by Derek Snow
